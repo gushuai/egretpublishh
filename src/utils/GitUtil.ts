@@ -1,0 +1,5 @@
+class GitUtil {
+
+}
+
+export = GitUtil;
