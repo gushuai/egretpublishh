@@ -30,6 +30,10 @@ async function onMessage(msg: { type: string, data: WebSocket.Data, target: WebS
     if (code != 0) {
         return;
     }
-    await BuildUtil.build(obj);
+    if (obj.type == "build") {
+        await BuildUtil.build(obj);
+    } else if (obj.type == "publish") {
+        await BuildUtil.publish(obj);
+    }
     _inprocess = false;
 }

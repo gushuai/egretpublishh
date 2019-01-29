@@ -2,6 +2,7 @@
 import childprocess from "child_process";
 import Log = require("./Log");
 import fs = require("fs-extra");
+import { Buffer } from "buffer";
 class SvnUtil {
 
     public static async checkOut(project: string) {
@@ -23,7 +24,9 @@ class SvnUtil {
                 ]);
 
                 process.stdout.on("data", (data) => {
-                    Log.out(`svncheckout:${data}`);
+                    let buffer = new Buffer(data);
+                    // Log.out(`svncheckout:${data}`);
+                    Log.out("svncheckout:"+buffer.toString());
                 });
                 process.stderr.on("data", (data) => {
                     Log.alert(`svncheckerror:${data}`);

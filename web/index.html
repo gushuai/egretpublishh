@@ -14,31 +14,103 @@
     <script src="./jquery/jquery.min.js"></script>
     <script src="./jquery/jquery.easyui.min.js"></script>
 
-    <div style="padding:5px 0;">
+
+
+
+    <div id="output" class="easyui-panel" style="width:100%;height: 600px;position:absolute;bottom: 0px;">
+    </div>
+
+    <div style="padding:5px 0; background-color: silver;">
         <a href="javascript:void(0)" class="easyui-linkbutton" onclick="onBuildNightly()">发布内网</a>
+    </div>
+    <div style="padding:5px 0; background-color: silver;">
+        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearOutPut()">清理日志</a>
+    </div>
+
+    <div id="dlg" class="easyui-dialog" title="提示" style="width:400px;height:200px;">
     </div>
 
     <script>
-
+        var _$socketConnect = false;
+        var _$ws;
         var $$project = "shxd";
-        var ws = new WebSocket("ws://172.25.0.242:8787");
-        ws.onopen = function () {
-            console.log("ws opened");
-        }
-        ws.onclose = function () {
-            alert("与服务器链接断开");
-        }
+        var $$msgArr = [];
+        var $$inlooop = false;
+        var $$msgCount = 0;
+        window.onload = function () {
+            hideAlertPanel();
 
-        ws.onmessage = function (msg) {
-            if (msg.indexOf("alert:") == -1) {
-                console.log("收到来自服务器的消息：" + msg.data);
-            } else {
-                alert(msg.substring(6));
+            var ws = _$ws = new WebSocket("ws://172.25.0.36:8787");
+            ws.onopen = function () {
+                _$socketConnect = true;
+            }
+            ws.onclose = function () {
+                doAlert("与服务器链接断开");
+                _$socketConnect = false;
+            }
+
+            ws.onmessage = function (msg) {
+                var data = msg.data;
+                if (data.indexOf("alert:") == -1) {
+                    // console.log("收到来自服务器的消息：" + msg.data);
+                    $$msgArr.push(data);
+                    $$msgCount += 1;
+                    if (!$$inlooop) {
+                        checkMsg();
+                        $$inlooop = true;
+                    }
+
+                } else {
+                    doAlert(data.substring(6));
+                }
             }
         }
 
+        function checkMsg() {
+            if ($$msgArr.length > 0) {
+                var len = Math.min($$msgArr.length, 4);
+                var tmpstr = "";
+                for (let i = 0; i < len; i++) {
+                    var data = $$msgArr.shift();
+                    if (data) {
+                        var tmp = '<p>' + data + `</p>`;
+                        tmpstr += tmp;
+                    }
+                }
+                var div = document.getElementById("output");
+                var str = div.innerHTML || "";
+                str += tmpstr;
+                div.innerHTML = str;
+                div.scrollTop = div.scrollHeight;
+                requestAnimationFrame(checkMsg)
+            } else {
+                $$inlooop = false;
+            }
+        }
+
+
         function onBuildNightly() {
-            ws.send(`{"type":"build","target":"nightly","project":"${$$project}"}`);
+            if (_$socketConnect) {
+                _$ws.send(`{"type":"build","target":"nightly","project":"${$$project}"}`);
+            } else {
+                doAlert("未连接至服务器！");
+            }
+        }
+
+        function doAlert(msg) {
+            var dlg = $('#dlg');
+            dlg.dialog("open");
+            document.getElementById("dlg").innerHTML = msg;
+        }
+
+        function hideAlertPanel() {
+            var dlg = $('#dlg');
+            dlg.dialog('close')
+        }
+
+        function clearOutPut() {
+            var div = document.getElementById("output");
+            div.innerHTML = "";
         }
     </script>
 </body>
