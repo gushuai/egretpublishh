@@ -26,14 +26,18 @@ async function onMessage(msg: { type: string, data: WebSocket.Data, target: WebS
     let str = msg.data as string;
     let obj = JSON.parse(str) as BuildOption;
     _inprocess = true;
-    let code = await SvnUtil.checkOut(obj.project);
-    if (code != 0) {
-        return;
-    }
-    if (obj.type == "build") {
-        await BuildUtil.build(obj);
-    } else if (obj.type == "publish") {
-        await BuildUtil.publish(obj);
+    try {
+        let code = await SvnUtil.checkOut(obj.project);
+        if (code != 0) {
+            return;
+        }
+        if (obj.type == "build") {
+            await BuildUtil.build(obj);
+        } else if (obj.type == "publish") {
+            await BuildUtil.publish(obj);
+        }
+    } catch (err) {
+        Log.out(err.message);
     }
     _inprocess = false;
 }

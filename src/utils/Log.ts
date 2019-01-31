@@ -16,10 +16,18 @@ class Log {
     }
 
     public static alert(msg: string) {
-        let ser = this._server;
-        if (ser) {
-            ser.alert(msg);
-        }
+        msg = "alert:" + msg;
+        this.out(msg);
+    }
+
+    public static progress(msg: string) {
+        msg = "progress:" + msg;
+        this.out(msg);
+    }
+
+    public static progressEnd(msg: string) {
+        msg = "progressEnd:" + msg;
+        this.out(msg);
     }
 }
 

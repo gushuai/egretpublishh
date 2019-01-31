@@ -24,11 +24,6 @@ class WebServer {
         }
     }
 
-    alert(msg: string) {
-        msg = "alert:" + msg;
-        this.broadCast(msg);
-    }
-
     private onClientConnet(client: WebSocket) {
         let _self = this;
         _self._clients.push(client);

@@ -26,10 +26,11 @@ class SvnUtil {
                 process.stdout.on("data", (data) => {
                     let buffer = new Buffer(data);
                     // Log.out(`svncheckout:${data}`);
-                    Log.out("svncheckout:"+buffer.toString());
+                    Log.out("svncheckout:" + buffer.toString());
                 });
                 process.stderr.on("data", (data) => {
                     Log.alert(`svncheckerror:${data}`);
+                    reject(data.message);
                 });
                 process.on("exit", (code) => {
                     if (code == 0) {
