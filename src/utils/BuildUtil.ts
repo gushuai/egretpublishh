@@ -164,21 +164,30 @@ export class BuildUtil {
                 Log.out("成功连接至远程服务器");
                 sh.sftp((err, sftp) => {
                     if (sftp) {
-                        let remoteDir = `/webproject/${project}/`;
+                        let remoteDir = `${_remoteRootDir}/${project}/`;
                         sftp.lstat(remoteDir, (err, stats) => {
                             if (err) {
                                 //这里的代码废除，直接在远程服务器上事先创建好文件夹
                                 if (err.message == "No such file") {
-                                    sftp.mkdir(remoteDir, (err2) => {
-                                        if (err2) {
-                                            Log.alert("创建远程文件夹失败：" + err2.message);
+                                    let arr = remoteDir.split("/");
+                                    let cmd = "cd / ";
+                                    let len = arr.length;
+                                    for (let i = 0; i < len; i++) {
+                                        let tmp = arr[i];
+                                        if (tmp) {
+                                            cmd += "&& mkdir " + tmp + " && cd " + tmp + " ";
+                                        }
+                                    }
+                                    sh.exec(cmd, (err, channel) => {
+                                        if (err) {
+                                            Log.alert("创建远程文件夹失败：" + err.message);
                                             reject();
                                         } else {
                                             readVer(sftp, remoteDir, (ver: number) => {
                                                 uploadFile(filePath, remoteDir, "web" + ver, sh, sftp, resolve, reject);
                                             });
                                         }
-                                    })
+                                    });
                                 }
                             } else {
                                 readVer(sftp, remoteDir, (ver: number) => {
@@ -201,7 +210,7 @@ export class BuildUtil {
                 Log.out("与远程服务器断开连接");
             });
             Log.out("尝试连接远程服务器");
-            // sh.connect({ host: "127.0.0.1", port: 22, username: "admin", password: "admin" });
+            sh.connect({ host: "127.0.0.1", port: 22, username: "admin", password: "admin" });
         });
         return promise;
 

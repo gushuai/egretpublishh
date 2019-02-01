@@ -9,7 +9,9 @@ let _inprocess: boolean;
 main();
 
 function main() {
-    (global as any)._rootDir = "E:/publishtest/";
+    let g = global as any;
+    g._rootDir = "E:/publishtest/";
+    g._remoteRootDir = "/webproject";
     let ser = new WebServer();
     ser.start({ port: 8787 });
     ser.onMessage = onMessage;
