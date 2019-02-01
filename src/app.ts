@@ -32,6 +32,7 @@ async function onMessage(msg: { type: string, data: WebSocket.Data, target: WebS
     try {
         let code = await SvnUtil.checkOut(obj.project);
         if (code != 0) {
+            _inprocess = false;
             return;
         }
         if (obj.type == "build") {
