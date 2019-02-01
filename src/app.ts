@@ -4,11 +4,12 @@ import SvnUtil from "./utils/SvnUtil";
 import Log = require("./utils/Log");
 import { BuildOption, BuildUtil } from "./utils/BuildUtil";
 
-var _inprocess: boolean;
+let _inprocess: boolean;
 
 main();
 
 function main() {
+    (global as any)._rootDir = "E:/publishtest/";
     let ser = new WebServer();
     ser.start({ port: 8787 });
     ser.onMessage = onMessage;

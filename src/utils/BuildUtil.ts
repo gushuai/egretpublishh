@@ -12,9 +12,8 @@ export class BuildUtil {
         try {
             switch (target) {
                 case "nightly"://内网
-                    await this.buildNightly(project);
-                    // let path = await this.makeZip(project);
-                    // await this.upload(path, project);
+                    await this.buildProject(project, ["build"]);
+
                     break;
                 case "wxgame"://微信小游戏
                     await this.buildWxGame(project);
@@ -25,21 +24,54 @@ export class BuildUtil {
         }
     }
 
-    public static publish(opt: BuildOption) {
+    public static async publish(opt: BuildOption) {
+        let { project } = opt;
+        try {
+            await this.buildProject(project, ["publish"]);
+            // let arr = ["bin-debug", "manifest.json","zlib", "index.html", "ani", "libs", "map", "resource"];
+            let arr = ["zlib", "map"];
+            let path = _rootDir + project + "/bin-release/web/";
+            let tmparr = fs.readdirSync(path);
+            let len = tmparr.length;
+            let max = +tmparr[0];
+            if (len > 1) {
+                max = 0;
+                for (let i = 0; i < len; i++) {
+                    let num = +tmparr[i];
+                    if (num > max) {
+                        max = num;
+                    }
+                }
+            }
+            path = path + max + "/";
+            len = arr.length;
 
+            for (let i = 0; i < len; i++) {
+                let tmppath = _rootDir + project + "/" + arr[i];
+                await this.copyDir(tmppath, path + arr[i]);
+            }
+            arr = ["zlib", "map", "index.html", "manifest.json", "resource", "js"];
+            let filePath = await this.makeZip(path, project, arr);
+            if (filePath) {
+                await this.upload(filePath, project);
+            }
+            await fs.remove(_rootDir + project + "/bin-release");
+        } catch (e) {
+
+        }
     }
 
-    private static buildNightly(project: string) {
-        let dir = "E:\\publishtest\\" + project;
+    private static buildProject(project: string, params: string[]) {
+        let dir = _rootDir + project;
         let promise: Promise<number>;
         promise = new Promise<number>((resolve, reject) => {
-            let process = childprocess.spawn("egret", ["build"], { cwd: dir, shell: true });
+            let process = childprocess.spawn("egret", params, { cwd: dir, shell: true });
 
             process.stdout.on("data", (data) => {
                 Log.out(`${data}`);
             });
             process.stderr.on("data", (data) => {
-                Log.alert(`${data}`);
+                Log.out(`${data}`);
             });
             process.on("exit", (code) => {
                 if (code == 0) {
@@ -57,14 +89,26 @@ export class BuildUtil {
     private static buildWxGame(project: string) {
     }
 
-    private static makeZip(project: string) {
-        let dir = "E:\\publishtest\\" + project + "\\";
-        let arr = ["bin-debug", "zlib", "index.html", "ani", "libs", "map", "resource"];
+
+    private static copyDir(from: string, to: string) {
+        let promise = new Promise<void>((resolve, reject) => {
+            fs.copy(from, to, (err) => {
+                if (err) {
+                    reject();
+                } else {
+                    resolve();
+                }
+            })
+        });
+        return promise;
+    }
+
+    private static makeZip(dir: string, project: string, arr: string[]) {
         let promise: Promise<string>;
         let len = arr.length;
         promise = new Promise<string>((resolve, reject) => {
             let arch = archiver("zip");
-            let zippath = "E:/publishtest/" + project + ".zip";
+            let zippath = _rootDir + project + ".zip";
             let output = fs.createWriteStream(zippath);
             Log.out("开始创建压缩包……");
 
@@ -157,20 +201,9 @@ export class BuildUtil {
                 Log.out("与远程服务器断开连接");
             });
             Log.out("尝试连接远程服务器");
-            sh.connect({ host: "127.0.0.1", port: 22, username: "admin", password: "admin" });
+            // sh.connect({ host: "127.0.0.1", port: 22, username: "admin", password: "admin" });
         });
         return promise;
-
-        function mkdir(sftp: ssh.SFTPWrapper, path: string, callback: Function) {
-            sftp.mkdir(path, (err2) => {
-                if (err2) {
-                    Log.alert("创建远程文件夹失败：" + err2.message);
-                    callback(false);
-                } else {
-                    callback(true);
-                }
-            })
-        }
 
         function readVer(sftp: ssh.SFTPWrapper, dir: string, callback: Function) {
             let path = dir + "ver.txt";

@@ -6,7 +6,8 @@ import { Buffer } from "buffer";
 class SvnUtil {
 
     public static async checkOut(project: string) {
-        let dir = "E:\\publishtest\\" + project;
+        
+        let dir = _rootDir + project;
         let promise: Promise<number>;
         if (fs.existsSync(dir)) {
             promise = this.update(project);

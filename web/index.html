@@ -23,6 +23,7 @@
 
     <div style="padding:5px 0; background-color: silver;">
         <a href="javascript:void(0)" class="easyui-linkbutton" onclick="onBuildNightly()">发布内网</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" onclick="onPublish()">发布外网</a>
     </div>
     <div style="padding:5px 0; background-color: silver;">
         <a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearOutPut()">清理日志</a>
@@ -40,11 +41,11 @@
         var $$msgCount = 0;
         window.onload = function () {
             hideAlertPanel();
-
-            var p = document.getElementById("tttt");
             var ws = _$ws = new WebSocket("ws://172.25.0.36:8787");
             ws.onopen = function () {
                 _$socketConnect = true;
+                $$msgArr = ["连接工具服务器成功!"];
+                checkMsg();
             }
             ws.onclose = function () {
                 doAlert("与服务器链接断开");
@@ -54,7 +55,6 @@
             ws.onmessage = function (msg) {
                 var data = msg.data;
                 if (data.indexOf("alert:") == -1) {
-                    // console.log("收到来自服务器的消息：" + msg.data);
                     $$msgArr.push(data);
                     $$msgCount += 1;
                     if (!$$inlooop) {
@@ -112,6 +112,14 @@
         function onBuildNightly() {
             if (_$socketConnect) {
                 _$ws.send(`{"type":"build","target":"nightly","project":"${$$project}"}`);
+            } else {
+                doAlert("未连接至服务器！");
+            }
+        }
+
+        function onPublish() {
+            if (_$socketConnect) {
+                _$ws.send(`{"type":"publish","project":"${$$project}"}`);
             } else {
                 doAlert("未连接至服务器！");
             }
