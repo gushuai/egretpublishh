@@ -13,7 +13,9 @@ export class BuildUtil {
             switch (target) {
                 case "nightly"://内网
                     await this.buildProject(project, ["build"]);
-
+                    // let arr = ["bin-debug", "manifest.json", "zlib", "index.html", "ani", "libs", "map", "resource"];
+                    // let filePath = await this.makeZip(_rootDir + project + "/", project, arr);
+                    // await this.upload(filePath, `${_remoteNightly}/${project}/`, "nightly", project);
                     break;
                 case "wxgame"://微信小游戏
                     await this.buildWxGame(project);
@@ -28,8 +30,7 @@ export class BuildUtil {
         let { project } = opt;
         try {
             await this.buildProject(project, ["publish"]);
-            // let arr = ["bin-debug", "manifest.json","zlib", "index.html", "ani", "libs", "map", "resource"];
-            let arr = ["zlib", "map"];
+            let arr = ["zlib", "map", "ani"];
             let path = _rootDir + project + "/bin-release/web/";
             let tmparr = fs.readdirSync(path);
             let len = tmparr.length;
@@ -53,7 +54,7 @@ export class BuildUtil {
             arr = ["zlib", "map", "index.html", "manifest.json", "resource", "js"];
             let filePath = await this.makeZip(path, project, arr);
             if (filePath) {
-                await this.upload(filePath, project);
+                await this.upload(filePath, `${_remoteRootDir}/${project}/`, "publish", project);
             }
             await fs.remove(_rootDir + project + "/bin-release");
         } catch (e) {
@@ -61,6 +62,11 @@ export class BuildUtil {
         }
     }
 
+    /**
+     * 
+     * @param project 项目名
+     * @param params 参数（例：["build"]）
+     */
     private static buildProject(project: string, params: string[]) {
         let dir = _rootDir + project;
         let promise: Promise<number>;
@@ -103,6 +109,12 @@ export class BuildUtil {
         return promise;
     }
 
+    /**
+     * 
+     * @param dir 要打包的文件所在目录(例：E:/webproject/test/)
+     * @param project 打包后的zip包名(可用项目名)
+     * @param arr 要打包的文件（文件夹）列表
+     */
     private static makeZip(dir: string, project: string, arr: string[]) {
         let promise: Promise<string>;
         let len = arr.length;
@@ -156,7 +168,14 @@ export class BuildUtil {
         return promise;
     }
 
-    private static upload(filePath: string, project: string) {
+    /**
+     * 
+     * @param filePath 要上传的zip包全路径
+     * @param remoteDir 需要传至的远程目录（例：/home/test/）
+     * @param type 区分内网包还是外网包或者其他（publish、nightly）
+     * @param project 项目名
+     */
+    private static upload(filePath: string, remoteDir: string, type: string, project: string) {
         let promise: Promise<void>;
         promise = new Promise<void>((resolve, reject) => {
             let sh = new ssh.Client();
@@ -164,7 +183,6 @@ export class BuildUtil {
                 Log.out("成功连接至远程服务器");
                 sh.sftp((err, sftp) => {
                     if (sftp) {
-                        let remoteDir = `${_remoteRootDir}/${project}/`;
                         sftp.lstat(remoteDir, (err, stats) => {
                             if (err) {
                                 //这里的代码废除，直接在远程服务器上事先创建好文件夹
@@ -183,16 +201,12 @@ export class BuildUtil {
                                             Log.alert("创建远程文件夹失败：" + err.message);
                                             reject();
                                         } else {
-                                            readVer(sftp, remoteDir, (ver: number) => {
-                                                uploadFile(filePath, remoteDir, "web" + ver, sh, sftp, resolve, reject);
-                                            });
+                                            tryUpload(type, sftp, sh, resolve, reject);
                                         }
                                     });
                                 }
                             } else {
-                                readVer(sftp, remoteDir, (ver: number) => {
-                                    uploadFile(filePath, remoteDir, "web" + ver, sh, sftp, resolve, reject);
-                                });
+                                tryUpload(type, sftp, sh, resolve, reject);
                             }
                         })
 
@@ -214,6 +228,33 @@ export class BuildUtil {
         });
         return promise;
 
+        /**
+         * 
+         * @param type 
+         * @param sftp 
+         * @param sh 
+         * @param resolve 
+         * @param reject 
+         */
+        function tryUpload(type: string, sftp: ssh.SFTPWrapper, sh: ssh.Client, resolve: Function, reject: Function) {
+            switch (type) {
+                case "publish":
+                    readVer(sftp, remoteDir, (ver: number) => {
+                        uploadFile(type, filePath, remoteDir, "web" + ver, sh, sftp, resolve, reject);
+                    });
+                    break;
+                case "nightly":
+                    uploadFile(type, filePath, remoteDir, project, sh, sftp, resolve, reject);
+                    break;
+            }
+        }
+
+        /**
+         * 
+         * @param sftp 
+         * @param dir 远程版本文件所在根目录(例:/web/test/)
+         * @param callback 
+         */
         function readVer(sftp: ssh.SFTPWrapper, dir: string, callback: Function) {
             let path = dir + "ver.txt";
             sftp.readFile(path, "UTF-8", (err, buffer) => {
@@ -237,10 +278,24 @@ export class BuildUtil {
             })
         }
 
-        function uploadFile(filePath: string, remotePath: string, fileName: string, sh: ssh.Client, sftp: ssh.SFTPWrapper, resolve: Function, reject: Function) {
+        /**
+         * 
+         * @param type 
+         * @param filePath zip包全路径
+         * @param remotePath 需要传至的远程目录（例：/home/test/）
+         * @param fileName 上传后重命名zip包的包名（nightly类型下有效）
+         * @param sh 
+         * @param sftp 
+         * @param resolve 
+         * @param reject 
+         */
+        function uploadFile(type: string, filePath: string, remotePath: string, fileName: string, sh: ssh.Client, sftp: ssh.SFTPWrapper, resolve: Function, reject: Function) {
             Log.out("开始上传压缩包至远程服务器");
             let date = new Date();
             let name = date.getFullYear() + "-" + fillZero(date.getMonth() + 1) + "-" + fillZero(date.getDate()) + "-" + fillZero(date.getHours()) + "-" + fillZero(date.getMinutes()) + "-" + fillZero(date.getSeconds());
+            if (type == "nightly") {
+                name = fileName;
+            }
             sftp.fastPut(filePath, remotePath + name, {
                 step: (total_transferred: number, chunk: number, total: number) => {
                     Log.progress("文件上传中：" + total_transferred + "/" + total);
@@ -252,7 +307,16 @@ export class BuildUtil {
                 } else {
                     Log.progressEnd("文件上传成功");
                     Log.out("开始解压文件");
-                    sh.exec(`cd ${remotePath} && unzip ${name} -d ${fileName}`, (err, channel) => {
+                    let cmd = "";
+                    switch (type) {
+                        case "publish":
+                            cmd = `cd ${remotePath} && unzip ${name} -d ${fileName}`;
+                            break;
+                        case "nightly":
+                            cmd = `cd ${remotePath} && unzip -o ${name}`;
+                            break;
+                    }
+                    sh.exec(cmd, (err, channel) => {
                         if (channel) {
                             channel.once("data", (data: any) => {
                                 Log.out(`解压文件:${data}`);
@@ -274,6 +338,7 @@ export class BuildUtil {
             }
         }
     }
+
 }
 export interface BuildOption {
     /**

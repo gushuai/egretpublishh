@@ -12,6 +12,7 @@ function main() {
     let g = global as any;
     g._rootDir = "E:/publishtest/";
     g._remoteRootDir = "/webproject";
+    g._remoteNightly = "/webnightly";
     let ser = new WebServer();
     ser.start({ port: 8787 });
     ser.onMessage = onMessage;
