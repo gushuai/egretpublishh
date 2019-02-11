@@ -1,8 +1,8 @@
 
 import childprocess from "child_process";
-import Log = require("./Log");
 import fs = require("fs-extra");
 import { Buffer } from "buffer";
+import { Log } from "./Log";
 class SvnUtil {
 
     public static async checkOut(project: string) {

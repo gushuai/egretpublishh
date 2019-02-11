@@ -1,5 +1,6 @@
 import { Server, ServerOptions } from "ws";
 import WebSocket from "ws";
+import { LogMessage } from "./utils/Log";
 class WebServer {
     private _clients: WebSocket[] = [];
 
@@ -13,13 +14,13 @@ class WebServer {
         });
     }
 
-    broadCast(msg: string) {
+    broadCast(msg: LogMessage) {
         let clients = this._clients;
         if (clients) {
             let len = clients.length;
             for (let i = 0; i < len; i++) {
                 let client = clients[i];
-                client.send(msg);
+                client.send(JSON.stringify(msg));
             }
         }
     }

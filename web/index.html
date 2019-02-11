@@ -44,7 +44,7 @@
             var ws = _$ws = new WebSocket("ws://172.25.0.36:8787");
             ws.onopen = function () {
                 _$socketConnect = true;
-                $$msgArr = ["连接工具服务器成功!"];
+                $$msgArr = [{ type: "normal", value: "连接工具服务器成功!" }];
                 checkMsg();
             }
             ws.onclose = function () {
@@ -53,17 +53,16 @@
             }
 
             ws.onmessage = function (msg) {
-                var data = msg.data;
-                if (data.indexOf("alert:") == -1) {
+                var data = JSON.parse(msg.data);
+                if (data.type == "alert") {
+                    doAlert(data.value);
+                } else {
                     $$msgArr.push(data);
                     $$msgCount += 1;
                     if (!$$inlooop) {
                         checkMsg();
                         $$inlooop = true;
                     }
-
-                } else {
-                    doAlert(data.substring(6));
                 }
             }
         }
@@ -72,28 +71,29 @@
             if ($$msgArr.length > 0) {
                 var len = Math.min($$msgArr.length, 4);
                 var tmpstr = "";
-                for (let i = 0; i < len; i++) {
+                for (var i = 0; i < len; i++) {
                     var data = $$msgArr.shift();
                     if (data) {
-                        if (data.indexOf("progress:") == -1) {
-                            if (data.indexOf("progressEnd:") != -1) {
-                                var p = document.getElementById("progress");
-                                if (p) {
-                                    p.id = Math.random() * 100000 + "";
-                                }
-                                data = data.substring(12);
-                            }
-                            var tmp = '<p>' + data + `</p>`;
-                            tmpstr += tmp;
-                        } else {
-                            data = data.substring(9);
+                        var type = data.type;
+                        var value = data.value;
+                        if (type == "progress") {
                             var p = document.getElementById("progress");
                             if (!p) {
-                                var tmp = '<p id="progress">' + data + '</p>';
+                                var tmp = '<p id="progress">' + value + '</p>';
                                 tmpstr = tmp;
                             } else {
-                                p.innerHTML = data;
+                                p.innerHTML = value;
                             }
+                        } else if (type == "progressEnd") {
+                            var p = document.getElementById("progress");
+                            if (p) {
+                                p.id = Math.random() * 100000 + "";
+                            }
+                            var tmp = '<p>' + value + `</p>`;
+                            tmpstr += tmp;
+                        } else {
+                            var tmp = '<p>' + value + `</p>`;
+                            tmpstr += tmp;
                         }
                     }
                 }

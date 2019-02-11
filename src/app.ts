@@ -1,7 +1,7 @@
 import WebServer from "./WebServer";
 import WebSocket from "ws";
 import SvnUtil from "./utils/SvnUtil";
-import Log = require("./utils/Log");
+import { Log } from "./utils/Log";
 import { BuildOption, BuildUtil } from "./utils/BuildUtil";
 
 let _inprocess: boolean;
@@ -23,7 +23,7 @@ async function onMessage(msg: { type: string, data: WebSocket.Data, target: WebS
     if (_inprocess) {
         let client = msg.target;
         if (client) {
-            client.send("alert:发版程序运行中，请稍后重试");
+            client.send(JSON.stringify({ type: "alert", value: "发版程序运行中，请稍后重试" }));
         }
         return;
     }

@@ -1,10 +1,9 @@
 import childprocess from "child_process";
 
-import Log = require("./Log");
-
 import fs from "fs-extra";
 import archiver from "archiver";
 import ssh from "ssh2";
+import { Log } from "./Log";
 export class BuildUtil {
 
     public static async build(opt: BuildOption) {
