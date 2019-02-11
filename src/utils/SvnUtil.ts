@@ -6,10 +6,15 @@ import { Log } from "./Log";
 class SvnUtil {
 
     public static async checkOut(project: string) {
-        
+
         let dir = _rootDir + project;
         let promise: Promise<number>;
         if (fs.existsSync(dir)) {
+            try {
+                await this.cleanUp(project);
+            } catch (e) {
+
+            }
             promise = this.update(project);
         } else {
             promise = new Promise<number>((resolve, reject) => {
@@ -48,7 +53,7 @@ class SvnUtil {
     }
 
     public static async update(project: string) {
-        let dir = "E:\\publishtest\\" + project;
+        let dir = _rootDir + project;
         let promise = new Promise<number>((resolve, reject) => {
             Log.out(`开始更新项目:${project}`);
             let process = childprocess.spawn("svn", [
@@ -69,6 +74,34 @@ class SvnUtil {
                 } else {
                     reject(code);
                     Log.alert(`项目${project}更新失败，请检查`);
+                }
+            })
+        });
+        return promise;
+    }
+
+    private static async cleanUp(project: string) {
+        let dir = _rootDir + project + "/";
+        let promise = new Promise<number>((resolve, reject) => {
+            Log.out(`svncleanup:${project}`);
+            let process = childprocess.spawn("svn", [
+                "cleanup",
+                dir
+            ]);
+
+            process.stdout.on("data", (data) => {
+                Log.out(`svncleanup:${data}`);
+            });
+            process.stderr.on("data", (data) => {
+                Log.alert(`svncleanuperror:${data}`);
+            });
+            process.on("exit", (code) => {
+                if (code == 0) {
+                    resolve(code);
+                    Log.out(`成功清理项目：${project}`);
+                } else {
+                    reject(code);
+                    Log.alert(`项目：${project}清理失败，请检查`);
                 }
             })
         });
