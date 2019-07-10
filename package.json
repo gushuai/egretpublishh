@@ -1,0 +1,29 @@
+{
+  "name": "egretpublish",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/icegarden/egretpublish.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/icegarden/egretpublish/issues"
+  },
+  "homepage": "https://github.com/icegarden/egretpublish#readme",
+  "dependencies": {
+    "@types/archiver": "^3.0.0",
+    "@types/fs-extra": "^8.0.0",
+    "@types/ssh2": "^0.5.38",
+    "@types/ws": "^6.0.1",
+    "archiver": "^3.0.0",
+    "fs-extra": "^8.1.0",
+    "ssh2": "^0.8.4",
+    "ws": "^7.1.0"
+  }
+}
